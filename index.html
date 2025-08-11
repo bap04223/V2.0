@@ -266,7 +266,7 @@
         
         /* Chat display area - Flexible height */
         .chat-container {
-            flex: 1;
+            height: 400px;
             overflow-y: auto;
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -419,8 +419,163 @@
             flex: 1;
             overflow-y: auto;
         }
+        
+        /* Patient Image Button Styling */
+        .patient-image-btn {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px 16px;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .patient-image-btn.available {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .patient-image-btn.available:hover {
+            background-color: #047857;
+        }
+        
+        .patient-image-btn.unavailable {
+            background-color: var(--danger-color);
+            color: white;
+            cursor: not-allowed;
+        }
+        
+        .patient-image-btn.disabled {
+            background-color: var(--text-secondary);
+            color: white;
+            cursor: not-allowed;
+        }
+        
+        /* Image Modal Styling */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .image-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-modal-content {
+            position: relative;
+            max-width: 98%;
+            max-height: 98%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .image-modal-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .image-modal-header h3 {
+            margin: 0;
+            font-size: 1.1em;
+        }
+        
+        .image-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .image-modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .image-modal-body {
+            padding: 0;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: calc(100% - 50px);
+            overflow: hidden;
+        }
+        
+        .patient-image {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+        
+        .image-loading {
+            padding: 40px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .image-error {
+            padding: 40px;
+            color: var(--danger-color);
+            text-align: center;
+        }
+        
+        /* Modal Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header section with title and description -->
@@ -525,6 +680,16 @@
                         
                         <button class="btn-secondary" onclick="selectRandomScenario()" style="margin-top: 10px;">
                             🎲 Random Scenario
+                        </button>
+                        
+                        <!-- Patient Image Button -->
+                        <button 
+                            class="patient-image-btn disabled" 
+                            id="patientImageBtn"
+                            onclick="showPatientImage()"
+                            disabled
+                        >
+                            📷 No Scenario Selected
                         </button>
                         
                         <!-- D-ID Configuration -->
@@ -658,7 +823,23 @@
         </div>
     </div>
     
-    <!-- JavaScript code for functionality -->
+    <!-- Patient Image Modal -->
+    <div class="image-modal" id="imageModal" onclick="closeImageModal(event)">
+        <div class="image-modal-content" onclick="event.stopPropagation()">
+            <div class="image-modal-header">
+                <h3 id="imageModalTitle">Patient Image</h3>
+                <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+            </div>
+            <div class="image-modal-body" id="imageModalBody">
+                <div class="image-loading">
+                    <div class="spinner"></div>
+                    Loading image...
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- JavaScript code for functionality -->
     <script>
         // ===== GLOBAL VARIABLES =====
         // These store the state of our application
@@ -913,8 +1094,8 @@
                 button.innerHTML = 'Push to Talk';
             }
         }
-        
-        // ===== D-ID INITIALIZATION =====
+
+// ===== D-ID INITIALIZATION =====
         // Initialize D-ID client and video element
 
         async function initializeDID() {
@@ -1202,8 +1383,8 @@
                 statusElement.className = `avatar-status ${type}`;
             }
         }
-        
-        // ===== GOOGLE SHEETS INTEGRATION =====
+
+// ===== GOOGLE SHEETS INTEGRATION =====
         // Load sheet names from Google Sheets
         
         async function loadSheetNames() {
@@ -1365,12 +1546,202 @@
             console.log('Selected scenario:', currentScenario);
             showStatus(`Scenario loaded: ${currentScenario['Patient Name']}`, 'success');
             
+            // Update patient image button based on image availability
+            updatePatientImageButton();
+            
             // Clear previous conversation
             clearChat();
             
             // Add initial message
             addMessage('Scenario loaded. Hold the talk button to start the consultation.', 'ai');
         }
+        
+        // Update patient image button state based on scenario
+        function updatePatientImageButton() {
+            const button = document.getElementById('patientImageBtn');
+            
+            if (!currentScenario) {
+                // No scenario selected
+                button.className = 'patient-image-btn disabled';
+                button.textContent = '📷 No Scenario Selected';
+                button.disabled = true;
+                return;
+            }
+            
+            // Check for image URL in various possible column names
+            const imageUrl = currentScenario['Patient Image'] || 
+                           currentScenario['Image URL'] || 
+                           currentScenario['Photo URL'] || 
+                           currentScenario['Image'] || 
+                           currentScenario['Photo'] ||
+                           currentScenario['Picture URL'] ||
+                           currentScenario['Picture'];
+            
+            if (imageUrl && imageUrl.trim() !== '') {
+                // Image available
+                button.className = 'patient-image-btn available';
+                button.innerHTML = '👁️ View Patient Image';
+                button.disabled = false;
+            } else {
+                // No image URL
+                button.className = 'patient-image-btn unavailable';
+                button.innerHTML = '❌ No Patient Image';
+                button.disabled = true;
+            }
+        }
+        
+        // Helper function to convert Google Drive share links to direct image URLs
+        function convertGoogleDriveUrl(url) {
+            if (!url || typeof url !== 'string') {
+                return url;
+            }
+            
+            // Check if it's a Google Drive share link
+            if (url.includes('drive.google.com/file/d/')) {
+                const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                if (fileIdMatch && fileIdMatch[1]) {
+                    const fileId = fileIdMatch[1];
+                    // Use a much larger size parameter for high resolution
+                    const directUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w2000`;
+                    console.log('Converted Google Drive URL:', url, '->', directUrl);
+                    return directUrl;
+                }
+            }
+            
+            // Return original URL if not a Google Drive link or conversion failed
+            return url;
+        }
+        
+        // Show patient image modal
+        function showPatientImage() {
+            if (!currentScenario) {
+                showStatus('No scenario selected', 'error');
+                return;
+            }
+            
+            // Get image URL from scenario data
+            const imageUrl = currentScenario['Patient Image'] || 
+                           currentScenario['Image URL'] || 
+                           currentScenario['Photo URL'] || 
+                           currentScenario['Image'] || 
+                           currentScenario['Photo'] ||
+                           currentScenario['Picture URL'] ||
+                           currentScenario['Picture'];
+            
+            if (!imageUrl || imageUrl.trim() === '') {
+                showStatus('No image URL available for this patient', 'error');
+                return;
+            }
+            
+            // Convert Google Drive share links to direct image URLs
+            const convertedImageUrl = convertGoogleDriveUrl(imageUrl.trim());
+            
+            // Log URL conversion for debugging
+            if (convertedImageUrl !== imageUrl.trim()) {
+                console.log('Original URL:', imageUrl.trim());
+                console.log('Converted URL:', convertedImageUrl);
+            }
+            
+            // Set modal title
+            const patientName = currentScenario['Patient Name'] || 'Patient';
+            document.getElementById('imageModalTitle').textContent = `${patientName} - Patient Image`;
+            
+            // Show modal
+            const modal = document.getElementById('imageModal');
+            const modalBody = document.getElementById('imageModalBody');
+            
+            // Show loading state
+            modalBody.innerHTML = `
+                <div class="image-loading">
+                    <div class="spinner"></div>
+                    Loading image...
+                </div>
+            `;
+            
+            modal.classList.add('show');
+            
+            // Create image element
+            const img = new Image();
+            
+            img.onload = function() {
+                // Image loaded successfully
+                modalBody.innerHTML = `<img src="${convertedImageUrl}" alt="${patientName}" class="patient-image">`;
+            };
+            
+            img.onerror = function() {
+                // Image failed to load - try alternative Google Drive formats
+                if (imageUrl.includes('drive.google.com') && !img.hasTriedAlternative) {
+                    console.log('First Google Drive format failed, trying alternative...');
+                    img.hasTriedAlternative = true;
+                    
+                    // Extract file ID and try different format
+                    const fileIdMatch = imageUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                    if (fileIdMatch && fileIdMatch[1]) {
+                        const fileId = fileIdMatch[1];
+                        // Try the uc format as backup
+                        const alternativeUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                        console.log('Trying alternative URL:', alternativeUrl);
+                        img.src = alternativeUrl;
+                        return;
+                    }
+                }
+                
+                // Image failed to load completely
+                modalBody.innerHTML = `
+                    <div class="image-error">
+                        <h4>Failed to Load Image</h4>
+                        <p>The image could not be loaded. This might be due to:</p>
+                        <ul style="text-align: left; margin: 15px 0; padding-left: 20px;">
+                            <li>The image is not set to "Anyone with the link can view"</li>
+                            <li>Google Drive is blocking the image embedding</li>
+                            <li>The file is not an image format</li>
+                            <li>The URL is incorrect or the file was deleted</li>
+                        </ul>
+                        
+                        <p><strong>Attempted URL:</strong></p>
+                        <p style="word-break: break-all; font-family: monospace; background: #f3f4f6; padding: 10px; border-radius: 4px; margin: 10px 0;">${convertedImageUrl}</p>
+                        
+                        ${convertedImageUrl !== imageUrl.trim() ? `<p><strong>Original URL:</strong></p><p style="word-break: break-all; font-family: monospace; background: #f3f4f6; padding: 10px; border-radius: 4px; margin: 10px 0;">${imageUrl.trim()}</p>` : ''}
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: #fef3c7; border-radius: 6px; border-left: 4px solid #f59e0b;">
+                            <h5 style="margin: 0 0 10px 0; color: #92400e;">💡 Solutions:</h5>
+                            <p style="margin: 5px 0; color: #92400e;"><strong>For Google Drive:</strong></p>
+                            <ol style="margin: 5px 0 10px 20px; color: #92400e;">
+                                <li>Right-click the image → "Get link"</li>
+                                <li>Change to "Anyone with the link"</li>
+                                <li>Use a direct image hosting service instead</li>
+                            </ol>
+                            <p style="margin: 5px 0; color: #92400e;"><strong>Alternatives:</strong> Try imgur.com, dropbox.com, or any direct image URL</p>
+                        </div>
+                        
+                        <button onclick="window.open('${imageUrl.trim()}', '_blank')" style="margin-top: 15px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            🔗 Open Original Link
+                        </button>
+                    </div>
+                `;
+            };
+            
+            // Start loading the image
+            img.src = convertedImageUrl;
+        }
+        
+        // Close patient image modal
+        function closeImageModal(event) {
+            // If event is passed and it's not the backdrop click, ignore
+            if (event && event.target !== event.currentTarget && event.type === 'click') {
+                return;
+            }
+            
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('show');
+        }
+        
+        // Add keyboard support for modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeImageModal();
+            }
+        });
         
         // Select a random scenario
         function selectRandomScenario() {
@@ -1390,8 +1761,8 @@
             
             showStatus(`Randomly selected: ${sheetData[randomIndex][0]}`, 'success');
         }
-        
-        // ===== EXPORT CONVERSATION FUNCTION =====
+
+// ===== EXPORT CONVERSATION FUNCTION =====
         // Export conversation as a downloadable text file
         
         function exportConversation() {
@@ -1611,8 +1982,8 @@
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
-                // Try to get response as text first
+
+// Try to get response as text first
                 const responseText = await response.text();
                 console.log('Raw response:', responseText);
                 
@@ -1872,8 +2243,7 @@
                 }
             }
         }
-        
-        // ===== CHAT MANAGEMENT =====
+// ===== CHAT MANAGEMENT =====
         // Handle chat display and messages
         
         function addMessage(text, sender) {
@@ -1911,6 +2281,14 @@
         function clearChat() {
             document.getElementById('chatContainer').innerHTML = '';
             conversationHistory = [];
+            
+            // Reset patient image button if no scenario is selected
+            if (!currentScenario) {
+                const button = document.getElementById('patientImageBtn');
+                button.className = 'patient-image-btn disabled';
+                button.textContent = '📷 No Scenario Selected';
+                button.disabled = true;
+            }
         }
         
         // ===== UTILITY FUNCTIONS =====
@@ -1980,6 +2358,16 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
 
